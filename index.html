@@ -311,8 +311,10 @@
       <div class="album-name" id="albumName"></div>
     </div>
 
+    <img id="preloadImg" src="" alt="" style="display:none">
+
     <div class="rank-grid" id="rankGrid"></div>
-  </div>
+  </img>
 
   <!-- ======== RESULT VIEW ======== -->
   <div class="result-view" id="resultView">
@@ -324,7 +326,7 @@
 
 <script>
 (function() {
-  const albums = [
+  var albums = [
     { name: 'David Bowie', file: 'Img/David Bowie.png' },
     { name: 'Space Oddity', file: 'Img/Space Oddity.png' },
     { name: 'The Man Who Sold The World', file: 'Img/The Man Who Sold The World.png' },
@@ -353,32 +355,23 @@
     { name: 'Blackstar', file: 'Img/Blackstar.png' },
   ];
 
-  // --- Preload all album images ---
-  var preloaded = {};
-  albums.forEach(function(a) {
-    var img = new Image();
-    img.src = a.file;
-    preloaded[a.file] = img;
-  });
+  var selectionView = document.getElementById('selectionView');
+  var resultView = document.getElementById('resultView');
+  var albumCover = document.getElementById('albumCover');
+  var albumName = document.getElementById('albumName');
+  var preloadImg = document.getElementById('preloadImg');
+  var rankGrid = document.getElementById('rankGrid');
+  var progressText = document.getElementById('progressText');
+  var progressFill = document.getElementById('progressFill');
+  var resultList = document.getElementById('resultList');
+  var btnReset = document.getElementById('btnReset');
 
-  // --- DOM refs ---
-  const selectionView = document.getElementById('selectionView');
-  const resultView = document.getElementById('resultView');
-  const albumCover = document.getElementById('albumCover');
-  const albumName = document.getElementById('albumName');
-  const rankGrid = document.getElementById('rankGrid');
-  const progressText = document.getElementById('progressText');
-  const progressFill = document.getElementById('progressFill');
-  const resultList = document.getElementById('resultList');
-  const btnReset = document.getElementById('btnReset');
+  var roundAlbums = [];
+  var currentIndex = 0;
+  var rankings = {};
+  var switching = false;
+  var nextReady = false;
 
-  // --- State ---
-  let roundAlbums = [];
-  let currentIndex = 0;
-  let rankings = {};
-  let switching = false;    // prevent double-click during transition
-
-  // --- Shuffle (Fisher-Yates) ---
   function shuffle(arr) {
     var a = arr.slice();
     for (var i = a.length - 1; i > 0; i--) {
@@ -388,20 +381,31 @@
     return a;
   }
 
-  // --- Init game ---
+  // Preload the next album image in background
+  function preloadNext() {
+    var nextIdx = currentIndex + 1;
+    if (nextIdx < roundAlbums.length) {
+      nextReady = false;
+      preloadImg.onload = function() { nextReady = true; };
+      preloadImg.onerror = function() { nextReady = true; };
+      preloadImg.src = roundAlbums[nextIdx].file;
+    }
+  }
+
   function initGame() {
     roundAlbums = shuffle(albums).slice(0, 10);
     currentIndex = 0;
     rankings = {};
     switching = false;
+    nextReady = false;
     rankGrid.innerHTML = '';
     resultList.innerHTML = '';
     albumCover.src = '';
     albumCover.classList.remove('transitioning');
     albumName.textContent = '';
     albumName.classList.remove('transitioning');
+    preloadImg.src = '';
 
-    // Build rank buttons
     for (var r = 1; r <= 10; r++) {
       var btn = document.createElement('button');
       btn.className = 'rank-btn';
@@ -412,13 +416,11 @@
         '<div class="rank-badge">#' + r + '</div>';
       btn.style.backgroundImage = '';
       btn.addEventListener('click', function() {
-        var rank = parseInt(this.dataset.rank);
-        onRankSelect(rank, this);
+        onRankSelect(parseInt(this.dataset.rank), this);
       });
       rankGrid.appendChild(btn);
     }
 
-    // Show selection view, hide result
     selectionView.classList.remove('hidden');
     selectionView.style.display = 'flex';
     resultView.classList.remove('active');
@@ -426,7 +428,6 @@
     showAlbum();
   }
 
-  // --- Show current album (preload first, then transition) ---
   function showAlbum() {
     if (currentIndex >= roundAlbums.length) {
       showResults();
@@ -436,51 +437,51 @@
     progressText.textContent = '第 ' + (currentIndex + 1) + ' / 10 张';
     progressFill.style.width = ((currentIndex + 1) * 10) + '%';
 
-    // Ensure image is loaded before showing
-    var loader = new Image();
-    loader.onload = function() {
-      var isFirst = (currentIndex === 0 && !albumCover.src);
-      if (isFirst) {
-        // First album: show immediately, no fade-out needed
-        albumCover.src = album.file;
-        albumName.textContent = album.name;
-        switching = false;
-        return;
-      }
-      // Fade out current, then swap
-      albumCover.classList.add('transitioning');
-      albumName.classList.add('transitioning');
-      setTimeout(function() {
-        albumCover.src = album.file;
-        albumName.textContent = album.name;
-        // Use requestAnimationFrame to ensure browser has painted the src change
-        requestAnimationFrame(function() {
-          albumCover.classList.remove('transitioning');
-          albumName.classList.remove('transitioning');
-          switching = false;
-        });
-      }, 250);
-    };
-    loader.onerror = function() {
-      // Fallback: swap immediately
+    var isFirst = (currentIndex === 0 && !albumCover.src);
+
+    function display() {
       albumCover.src = album.file;
       albumName.textContent = album.name;
       albumCover.classList.remove('transitioning');
       albumName.classList.remove('transitioning');
       switching = false;
-    };
-    loader.src = album.file;
+      // Start preloading the next one immediately
+      preloadNext();
+    }
+
+    if (isFirst) {
+      // First album: show directly, no fade-out
+      display();
+      return;
+    }
+
+    // Fade out current image first
+    albumCover.classList.add('transitioning');
+    albumName.classList.add('transitioning');
+
+    // If next image already preloaded, swap after short delay
+    if (nextReady) {
+      setTimeout(display, 200);
+    } else {
+      // Wait for preload to finish (with a max 2s timeout)
+      var fired = false;
+      function onReady() {
+        if (fired) return;
+        fired = true;
+        setTimeout(display, 150);
+      }
+      preloadImg.onload = onReady;
+      preloadImg.onerror = onReady;
+      setTimeout(onReady, 2000);
+    }
   }
 
-  // --- Handle rank selection ---
   function onRankSelect(rank, btn) {
     if (rankings[rank]) return;
     if (switching) return;
     var album = roundAlbums[currentIndex];
 
     rankings[rank] = album;
-
-    // Set button background to album cover
     btn.style.backgroundImage = 'url("' + album.file + '")';
     btn.classList.add('used');
     btn.title = album.name + ' — #' + rank;
@@ -490,7 +491,6 @@
     showAlbum();
   }
 
-  // --- Show results ---
   function showResults() {
     selectionView.style.display = 'none';
     selectionView.classList.add('hidden');
@@ -516,10 +516,7 @@
     }
   }
 
-  // --- Reset ---
   btnReset.addEventListener('click', initGame);
-
-  // --- Start ---
   initGame();
 })();
 </script>
