@@ -353,6 +353,14 @@
     { name: 'Blackstar', file: 'Img/Blackstar.png' },
   ];
 
+  // --- Preload all album images ---
+  var preloaded = {};
+  albums.forEach(function(a) {
+    var img = new Image();
+    img.src = a.file;
+    preloaded[a.file] = img;
+  });
+
   // --- DOM refs ---
   const selectionView = document.getElementById('selectionView');
   const resultView = document.getElementById('resultView');
@@ -367,15 +375,15 @@
   // --- State ---
   let roundAlbums = [];
   let currentIndex = 0;
-  let rankings = {};       // { rankNumber: albumObject }
-  let albumRankMap = {};   // { albumFile: rankNumber } for quick lookup
+  let rankings = {};
+  let switching = false;    // prevent double-click during transition
 
   // --- Shuffle (Fisher-Yates) ---
   function shuffle(arr) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
     }
     return a;
   }
@@ -385,20 +393,28 @@
     roundAlbums = shuffle(albums).slice(0, 10);
     currentIndex = 0;
     rankings = {};
-    albumRankMap = {};
+    switching = false;
     rankGrid.innerHTML = '';
     resultList.innerHTML = '';
+    albumCover.src = '';
+    albumCover.classList.remove('transitioning');
+    albumName.textContent = '';
+    albumName.classList.remove('transitioning');
 
     // Build rank buttons
-    for (let r = 1; r <= 10; r++) {
-      const btn = document.createElement('button');
+    for (var r = 1; r <= 10; r++) {
+      var btn = document.createElement('button');
       btn.className = 'rank-btn';
       btn.dataset.rank = r;
       btn.innerHTML =
         '<span class="rank-num">' + r + '</span>' +
         '<div class="rank-used-overlay"></div>' +
         '<div class="rank-badge">#' + r + '</div>';
-      btn.addEventListener('click', function() { onRankSelect(r, btn); });
+      btn.style.backgroundImage = '';
+      btn.addEventListener('click', function() {
+        var rank = parseInt(this.dataset.rank);
+        onRankSelect(rank, this);
+      });
       rankGrid.appendChild(btn);
     }
 
@@ -410,42 +426,67 @@
     showAlbum();
   }
 
-  // --- Show current album ---
+  // --- Show current album (preload first, then transition) ---
   function showAlbum() {
     if (currentIndex >= roundAlbums.length) {
       showResults();
       return;
     }
-    const album = roundAlbums[currentIndex];
+    var album = roundAlbums[currentIndex];
     progressText.textContent = '第 ' + (currentIndex + 1) + ' / 10 张';
     progressFill.style.width = ((currentIndex + 1) * 10) + '%';
 
-    // Transition out
-    albumCover.classList.add('transitioning');
-    albumName.classList.add('transitioning');
-
-    setTimeout(function() {
+    // Ensure image is loaded before showing
+    var loader = new Image();
+    loader.onload = function() {
+      var isFirst = (currentIndex === 0 && !albumCover.src);
+      if (isFirst) {
+        // First album: show immediately, no fade-out needed
+        albumCover.src = album.file;
+        albumName.textContent = album.name;
+        switching = false;
+        return;
+      }
+      // Fade out current, then swap
+      albumCover.classList.add('transitioning');
+      albumName.classList.add('transitioning');
+      setTimeout(function() {
+        albumCover.src = album.file;
+        albumName.textContent = album.name;
+        // Use requestAnimationFrame to ensure browser has painted the src change
+        requestAnimationFrame(function() {
+          albumCover.classList.remove('transitioning');
+          albumName.classList.remove('transitioning');
+          switching = false;
+        });
+      }, 250);
+    };
+    loader.onerror = function() {
+      // Fallback: swap immediately
       albumCover.src = album.file;
       albumName.textContent = album.name;
       albumCover.classList.remove('transitioning');
       albumName.classList.remove('transitioning');
-    }, 350);
+      switching = false;
+    };
+    loader.src = album.file;
   }
 
   // --- Handle rank selection ---
   function onRankSelect(rank, btn) {
-    if (rankings[rank]) return; // already taken
-    const album = roundAlbums[currentIndex];
+    if (rankings[rank]) return;
+    if (switching) return;
+    var album = roundAlbums[currentIndex];
 
     rankings[rank] = album;
-    albumRankMap[album.file] = rank;
 
-    // Set button background to album cover (quotes needed for paths with spaces/special chars)
+    // Set button background to album cover
     btn.style.backgroundImage = 'url("' + album.file + '")';
     btn.classList.add('used');
     btn.title = album.name + ' — #' + rank;
 
     currentIndex++;
+    switching = true;
     showAlbum();
   }
 
@@ -456,13 +497,13 @@
     resultView.classList.add('active');
 
     resultList.innerHTML = '';
-    for (let r = 1; r <= 10; r++) {
-      const album = rankings[r];
-      const card = document.createElement('div');
+    for (var r = 1; r <= 10; r++) {
+      var album = rankings[r];
+      var card = document.createElement('div');
       card.className = 'result-card';
       if (r <= 3) card.classList.add('top-3');
 
-      let rankClass = 'rank-n';
+      var rankClass = 'rank-n';
       if (r === 1) rankClass = 'rank-1';
       else if (r === 2) rankClass = 'rank-2';
       else if (r === 3) rankClass = 'rank-3';
