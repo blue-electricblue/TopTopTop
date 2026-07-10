@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>David Bowie — Top Ten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08080b;
+    --surface: #111117;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59,130,246,0.5);
+    --gold: #c9a84c;
+    --gold-glow: rgba(201,168,76,0.4);
+    --red: #c41e3a;
+    --red-glow: rgba(196,30,58,0.5);
+    --silver: #a8a8b3;
+    --text: #e4e4eb;
+    --dim: #6b6b7b;
+    --border: #22222e;
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(201,168,76,0.04) 0%, transparent 50%);
+  }
+
+  /* grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { width: 100%; max-width: 800px; padding: 24px; position: relative; z-index: 1; }
+
+  /* ============ SELECTION VIEW ============ */
+  .selection-view {
+    display: flex; flex-direction: column; align-items: center; gap: 32px;
+  }
+
+  /* header */
+  .header { text-align: center; }
+  .header-tag {
+    font-family: var(--font-display);
+    font-size: 0.7rem; letter-spacing: 0.35em; color: var(--gold);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem; font-weight: 900; letter-spacing: 0.05em;
+  }
+  .header-title span { color: var(--blue); }
+
+  /* progress */
+  .progress-wrap { width: 100%; max-width: 420px; }
+  .progress-text {
+    text-align: center; font-size: 0.85rem; color: var(--silver);
+    letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 2px; background: var(--border); border-radius: 1px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--blue);
+    box-shadow: 0 0 8px var(--blue-glow);
+    transition: width 0.5s var(--ease-out);
+    border-radius: 1px;
+  }
+
+  /* album display */
+  .album-stage { position: relative; width: 320px; height: 320px; }
+  .album-cover {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 40px rgba(59,130,246,0.08), 0 8px 32px rgba(0,0,0,0.6);
+    transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+    opacity: 1; transform: scale(1);
+  }
+  .album-cover.transitioning {
+    opacity: 0; transform: scale(0.92);
+  }
+  .album-name {
+    text-align: center; margin-top: 14px; font-size: 0.95rem;
+    font-weight: 600; letter-spacing: 0.04em; color: var(--silver);
+    transition: opacity 0.35s var(--ease-out);
+  }
+  .album-name.transitioning { opacity: 0; }
+
+  /* rank buttons - 5x2 grid */
+  .rank-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    max-width: 480px;
+    width: 100%;
+  }
+  .rank-btn {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 2px dashed var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.25s var(--ease-out);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background-size: cover; background-position: center;
+    min-height: 0;
+  }
+  .rank-btn:hover:not(.used) {
+    border-color: var(--blue); border-style: solid;
+    color: var(--blue);
+    box-shadow: 0 0 24px var(--blue-glow), inset 0 0 20px rgba(59,130,246,0.04);
+    transform: translateY(-3px);
+  }
+  .rank-btn.used {
+    border-style: solid;
+    border-color: var(--gold);
+    cursor: default;
+    box-shadow: 0 0 16px var(--gold-glow);
+    color: transparent;
+  }
+  .rank-btn.used .rank-num {
+    display: none;
+  }
+  .rank-btn .rank-badge {
+    display: none;
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(0,0,0,0.8);
+    color: var(--gold);
+    font-family: var(--font-display); font-size: 0.6rem; font-weight: 900;
+    padding: 1px 6px; border-radius: 4px;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--gold);
+  }
+  .rank-btn.used .rank-badge {
+    display: block;
+  }
+  .rank-btn .rank-used-overlay {
+    display: none;
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.35);
+  }
+  .rank-btn.used .rank-used-overlay {
+    display: block;
+  }
+
+  /* ============ RESULT VIEW ============ */
+  .result-view { display: none; flex-direction: column; align-items: center; gap: 32px; }
+  .result-view.active { display: flex; }
+
+  .result-header {
+    font-family: var(--font-display); font-size: 1.4rem; font-weight: 900;
+    letter-spacing: 0.1em; text-align: center;
+  }
+  .result-header span { color: var(--gold); }
+
+  .result-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+  .result-card {
+    display: flex; align-items: center; gap: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 12px 20px; transition: all 0.3s var(--ease-out);
+    opacity: 0; transform: translateX(-30px);
+    animation: cardIn 0.5s var(--ease-out) forwards;
+    cursor: default;
+  }
+  .result-card:nth-child(1) { animation-delay: 0.05s; }
+  .result-card:nth-child(2) { animation-delay: 0.1s; }
+  .result-card:nth-child(3) { animation-delay: 0.15s; }
+  .result-card:nth-child(4) { animation-delay: 0.2s; }
+  .result-card:nth-child(5) { animation-delay: 0.25s; }
+  .result-card:nth-child(6) { animation-delay: 0.3s; }
+  .result-card:nth-child(7) { animation-delay: 0.35s; }
+  .result-card:nth-child(8) { animation-delay: 0.4s; }
+  .result-card:nth-child(9) { animation-delay: 0.45s; }
+  .result-card:nth-child(10) { animation-delay: 0.5s; }
+  .result-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 24px var(--gold-glow);
+  }
+  .result-card.top-3 {
+    border-color: rgba(201,168,76,0.3);
+    box-shadow: 0 0 16px rgba(201,168,76,0.08);
+  }
+  .result-card.top-3:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 32px var(--gold-glow);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .result-rank {
+    font-family: var(--font-display); font-size: 1.6rem; font-weight: 900;
+    min-width: 48px; text-align: center;
+  }
+  .rank-1 { color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.6); font-size: 2rem; }
+  .rank-2 { color: #c0c0c0; text-shadow: 0 0 12px rgba(192,192,192,0.3); font-size: 1.7rem; }
+  .rank-3 { color: #cd7f32; text-shadow: 0 0 10px rgba(205,127,50,0.3); font-size: 1.5rem; }
+  .rank-n  { color: var(--silver); }
+
+  .result-img {
+    width: 64px; height: 64px; object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border); flex-shrink: 0;
+  }
+  .result-name {
+    font-size: 1rem; font-weight: 600; letter-spacing: 0.03em;
+  }
+
+  /* reset button */
+  .btn-reset {
+    font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.2em;
+    padding: 12px 36px; border: 1px solid var(--border);
+    background: transparent; color: var(--silver); cursor: pointer;
+    transition: all 0.3s var(--ease-out); text-transform: uppercase;
+    position: relative; overflow: hidden;
+  }
+  .btn-reset::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--blue); opacity: 0; transition: opacity 0.3s;
+    z-index: -1;
+  }
+  .btn-reset:hover {
+    border-color: var(--blue); color: #fff;
+    box-shadow: 0 0 24px var(--blue-glow);
+  }
+  .btn-reset:hover::before { opacity: 0.08; }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 640px) {
+    .app { padding: 12px; max-width: 100%; }
+    .album-stage { width: 220px; height: 220px; }
+    .header-title { font-size: 1.1rem; }
+    .header-tag { font-size: 0.6rem; }
+    .rank-grid {
+      gap: 8px; max-width: 100%;
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .rank-btn { font-size: 0.8rem; border-radius: 6px; }
+    .rank-btn .rank-badge {
+      font-size: 0.5rem; padding: 0px 4px; top: 2px; right: 2px;
+    }
+    .result-card { padding: 10px 12px; gap: 10px; border-radius: 8px; }
+    .result-rank { font-size: 1.1rem; min-width: 32px; }
+    .rank-1 { font-size: 1.4rem; }
+    .rank-2 { font-size: 1.2rem; }
+    .rank-3 { font-size: 1.1rem; }
+    .result-img { width: 44px; height: 44px; border-radius: 6px; }
+    .result-name { font-size: 0.8rem; }
+    .result-header { font-size: 1.1rem; }
+    .selection-view { gap: 20px; }
+    .progress-wrap { max-width: 100%; }
+  }
+
+  @media (max-width: 380px) {
+    .album-stage { width: 180px; height: 180px; }
+    .rank-grid { gap: 6px; }
+    .rank-btn { font-size: 0.7rem; border-radius: 5px; }
+  }
+
+  .selection-view.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ======== SELECTION VIEW ======== -->
+  <div class="selection-view" id="selectionView">
+    <div class="header">
+      <div class="header-tag">Pick Your</div>
+      <h1 class="header-title">TOP <span>TEN</span></h1>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-text" id="progressText">第 1 / 10 张</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="album-stage">
+        <img class="album-cover" id="albumCover" src="" alt="Album cover">
+      </div>
+      <div class="album-name" id="albumName"></div>
+    </div>
+
+    <div class="rank-grid" id="rankGrid"></div>
+  </div>
+
+  <!-- ======== RESULT VIEW ======== -->
+  <div class="result-view" id="resultView">
+    <h2 class="result-header">你的<span>TOP TEN</span></h2>
+    <div class="result-list" id="resultList"></div>
+    <button class="btn-reset" id="btnReset">重新选择</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const albums = [
+    { name: 'David Bowie', file: 'Img/David Bowie.png' },
+    { name: 'Space Oddity', file: 'Img/Space Oddity.png' },
+    { name: 'The Man Who Sold The World', file: 'Img/The Man Who Sold The World.png' },
+    { name: 'Hunky Dory', file: 'Img/Hunky Dory.png' },
+    { name: 'Ziggy Stardust', file: 'Img/Ziggy Stardust.png' },
+    { name: 'Aladdin Sane', file: 'Img/Aladdin Sane.png' },
+    { name: 'Pin Ups', file: 'Img/Pinups.png' },
+    { name: 'Diamond Dogs', file: 'Img/Diamond Dogs.png' },
+    { name: 'Young Americans', file: 'Img/Young Americans.png' },
+    { name: 'Station to Station', file: 'Img/Station to Station.png' },
+    { name: 'Low', file: 'Img/Low.png' },
+    { name: 'Heroes', file: 'Img/Heroes.png' },
+    { name: 'Lodger', file: 'Img/Lodger.png' },
+    { name: 'Scary Monsters', file: 'Img/Scary Monsters.png' },
+    { name: "Let's Dance", file: "Img/Let's Dance.png" },
+    { name: 'Tonight', file: 'Img/Tonight.png' },
+    { name: 'Never Let Me Down', file: 'Img/Never Let Me Down.png' },
+    { name: 'Black Tie White Noise', file: 'Img/Black Tie White Noise.png' },
+    { name: 'The Buddha of Suburbia', file: 'Img/The Buddha of Suburbia.png' },
+    { name: 'Outside', file: 'Img/Outside.png' },
+    { name: 'Earthling', file: 'Img/Earthling.png' },
+    { name: 'Hours...', file: 'Img/Hours....png' },
+    { name: 'Heathen', file: 'Img/Heathen.png' },
+    { name: 'Reality', file: 'Img/Reality.png' },
+    { name: 'The Next Day', file: 'Img/The Next Day.png' },
+    { name: 'Blackstar', file: 'Img/Blackstar.png' },
+  ];
+
+  // --- DOM refs ---
+  const selectionView = document.getElementById('selectionView');
+  const resultView = document.getElementById('resultView');
+  const albumCover = document.getElementById('albumCover');
+  const albumName = document.getElementById('albumName');
+  const rankGrid = document.getElementById('rankGrid');
+  const progressText = document.getElementById('progressText');
+  const progressFill = document.getElementById('progressFill');
+  const resultList = document.getElementById('resultList');
+  const btnReset = document.getElementById('btnReset');
+
+  // --- State ---
+  let roundAlbums = [];
+  let currentIndex = 0;
+  let rankings = {};       // { rankNumber: albumObject }
+  let albumRankMap = {};   // { albumFile: rankNumber } for quick lookup
+
+  // --- Shuffle (Fisher-Yates) ---
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // --- Init game ---
+  function initGame() {
+    roundAlbums = shuffle(albums).slice(0, 10);
+    currentIndex = 0;
+    rankings = {};
+    albumRankMap = {};
+    rankGrid.innerHTML = '';
+    resultList.innerHTML = '';
+
+    // Build rank buttons
+    for (let r = 1; r <= 10; r++) {
+      const btn = document.createElement('button');
+      btn.className = 'rank-btn';
+      btn.dataset.rank = r;
+      btn.innerHTML =
+        '<span class="rank-num">' + r + '</span>' +
+        '<div class="rank-used-overlay"></div>' +
+        '<div class="rank-badge">#' + r + '</div>';
+      btn.addEventListener('click', function() { onRankSelect(r, btn); });
+      rankGrid.appendChild(btn);
+    }
+
+    // Show selection view, hide result
+    selectionView.classList.remove('hidden');
+    selectionView.style.display = 'flex';
+    resultView.classList.remove('active');
+
+    showAlbum();
+  }
+
+  // --- Show current album ---
+  function showAlbum() {
+    if (currentIndex >= roundAlbums.length) {
+      showResults();
+      return;
+    }
+    const album = roundAlbums[currentIndex];
+    progressText.textContent = '第 ' + (currentIndex + 1) + ' / 10 张';
+    progressFill.style.width = ((currentIndex + 1) * 10) + '%';
+
+    // Transition out
+    albumCover.classList.add('transitioning');
+    albumName.classList.add('transitioning');
+
+    setTimeout(function() {
+      albumCover.src = album.file;
+      albumName.textContent = album.name;
+      albumCover.classList.remove('transitioning');
+      albumName.classList.remove('transitioning');
+    }, 350);
+  }
+
+  // --- Handle rank selection ---
+  function onRankSelect(rank, btn) {
+    if (rankings[rank]) return; // already taken
+    const album = roundAlbums[currentIndex];
+
+    rankings[rank] = album;
+    albumRankMap[album.file] = rank;
+
+    // Set button background to album cover (quotes needed for paths with spaces/special chars)
+    btn.style.backgroundImage = 'url("' + album.file + '")';
+    btn.classList.add('used');
+    btn.title = album.name + ' — #' + rank;
+
+    currentIndex++;
+    showAlbum();
+  }
+
+  // --- Show results ---
+  function showResults() {
+    selectionView.style.display = 'none';
+    selectionView.classList.add('hidden');
+    resultView.classList.add('active');
+
+    resultList.innerHTML = '';
+    for (let r = 1; r <= 10; r++) {
+      const album = rankings[r];
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      if (r <= 3) card.classList.add('top-3');
+
+      let rankClass = 'rank-n';
+      if (r === 1) rankClass = 'rank-1';
+      else if (r === 2) rankClass = 'rank-2';
+      else if (r === 3) rankClass = 'rank-3';
+
+      card.innerHTML =
+        '<div class="result-rank ' + rankClass + '">' + r + '</div>' +
+        '<img class="result-img" src="' + album.file + '" alt="">' +
+        '<div class="result-name">' + album.name + '</div>';
+      resultList.appendChild(card);
+    }
+  }
+
+  // --- Reset ---
+  btnReset.addEventListener('click', initGame);
+
+  // --- Start ---
+  initGame();
+})();
+</script>
+</body>
+</html>
