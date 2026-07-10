@@ -277,8 +277,6 @@
     box-shadow: 0 0 16px var(--gold-glow);
   }
 
-  .selection-view.hidden { display: none; }
-
   /* ============ RESPONSIVE ============ */
   @media (max-width: 640px) {
     .app { padding: 12px; max-width: 100%; }
@@ -350,10 +348,8 @@
       <div class="album-name" id="albumName"></div>
     </div>
 
-    <img id="preloadImg" src="" alt="" style="display:none">
-
     <div class="rank-grid" id="rankGrid"></div>
-  </img>
+  </div>
 
   <!-- ======== RESULT VIEW ======== -->
   <div class="result-view" id="resultView">
@@ -404,18 +400,24 @@
   var resultView = document.getElementById('resultView');
   var albumCover = document.getElementById('albumCover');
   var albumName = document.getElementById('albumName');
-  var preloadImg = document.getElementById('preloadImg');
   var rankGrid = document.getElementById('rankGrid');
   var progressText = document.getElementById('progressText');
   var progressFill = document.getElementById('progressFill');
   var resultList = document.getElementById('resultList');
   var btnReset = document.getElementById('btnReset');
 
+  // Image preload pool - 4 hidden images for batch preloading
+  var pool = [];
+  for (var p = 0; p < 4; p++) {
+    var img = new Image();
+    img.style.display = 'none';
+    document.body.appendChild(img);
+    pool.push(img);
+  }
+
   var roundAlbums = [];
   var currentIndex = 0;
   var rankings = {};
-  var switching = false;
-  var nextReady = false;
 
   function shuffle(arr) {
     var a = arr.slice();
@@ -426,14 +428,13 @@
     return a;
   }
 
-  // Preload the next album image in background
-  function preloadNext() {
-    var nextIdx = currentIndex + 1;
-    if (nextIdx < roundAlbums.length) {
-      nextReady = false;
-      preloadImg.onload = function() { nextReady = true; };
-      preloadImg.onerror = function() { nextReady = true; };
-      preloadImg.src = roundAlbums[nextIdx].file;
+  // Batch preload upcoming images using the pool
+  function preloadAhead() {
+    for (var i = 0; i < pool.length; i++) {
+      var idx = currentIndex + 1 + i;
+      if (idx < roundAlbums.length) {
+        pool[i].src = roundAlbums[idx].file;
+      }
     }
   }
 
@@ -441,15 +442,15 @@
     roundAlbums = shuffle(albums).slice(0, 10);
     currentIndex = 0;
     rankings = {};
-    switching = false;
-    nextReady = false;
     rankGrid.innerHTML = '';
     resultList.innerHTML = '';
     albumCover.src = '';
     albumCover.classList.remove('transitioning');
     albumName.textContent = '';
     albumName.classList.remove('transitioning');
-    preloadImg.src = '';
+
+    // Reset preload pool
+    for (var i = 0; i < pool.length; i++) { pool[i].src = ''; }
 
     for (var r = 1; r <= 10; r++) {
       var btn = document.createElement('button');
@@ -466,64 +467,46 @@
       rankGrid.appendChild(btn);
     }
 
-    selectionView.classList.remove('hidden');
+    // Direct style display - don't rely on CSS class toggles
     selectionView.style.display = 'flex';
+    resultView.style.display = 'none';
     resultView.classList.remove('active');
 
     showAlbum();
   }
 
-  function showAlbum() {
-    if (currentIndex >= roundAlbums.length) {
+  function showAlbum(idx) {
+    if (idx == null) idx = currentIndex;
+    if (idx >= roundAlbums.length) {
       showResults();
       return;
     }
-    var album = roundAlbums[currentIndex];
-    progressText.textContent = '第 ' + (currentIndex + 1) + ' / 10 张';
-    progressFill.style.width = ((currentIndex + 1) * 10) + '%';
+    var album = roundAlbums[idx];
+    progressText.textContent = '第 ' + (idx + 1) + ' / 10 张';
+    progressFill.style.width = ((idx + 1) * 10) + '%';
 
-    var isFirst = (currentIndex === 0 && !albumCover.src);
+    var isFirst = (idx === 0 && !albumCover.src);
 
     function display() {
       albumCover.src = album.file;
       albumName.textContent = album.name;
       albumCover.classList.remove('transitioning');
       albumName.classList.remove('transitioning');
-      switching = false;
-      // Start preloading the next one immediately
-      preloadNext();
+      preloadAhead();
     }
 
     if (isFirst) {
-      // First album: show directly, no fade-out
       display();
       return;
     }
 
-    // Fade out current image first
     albumCover.classList.add('transitioning');
     albumName.classList.add('transitioning');
-
-    // If next image already preloaded, swap after short delay
-    if (nextReady) {
-      setTimeout(display, 200);
-    } else {
-      // Wait for preload to finish (with a max 2s timeout)
-      var fired = false;
-      function onReady() {
-        if (fired) return;
-        fired = true;
-        setTimeout(display, 150);
-      }
-      preloadImg.onload = onReady;
-      preloadImg.onerror = onReady;
-      setTimeout(onReady, 2000);
-    }
+    setTimeout(display, 250);
   }
 
   function onRankSelect(rank, btn) {
     if (rankings[rank]) return;
-    if (switching) return;
     var album = roundAlbums[currentIndex];
 
     rankings[rank] = album;
@@ -532,16 +515,13 @@
     btn.title = album.name + ' — #' + rank;
 
     currentIndex++;
-    switching = true;
-    showAlbum();
+    showAlbum(currentIndex);
   }
 
   function showResults() {
-    switching = false;
-    preloadImg.src = '';
-
+    // Direct style manipulation - most reliable
     selectionView.style.display = 'none';
-    selectionView.classList.add('hidden');
+    resultView.style.display = 'flex';
     resultView.classList.add('active');
 
     resultList.innerHTML = '';
@@ -568,8 +548,7 @@
       resultList.appendChild(card);
     }
 
-    // Scroll to top of results
-    resultView.scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   btnReset.addEventListener('click', initGame);
