@@ -34,9 +34,10 @@
     font-family: var(--font-body);
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     overflow-x: hidden;
+    padding: 32px 0;
     background-image:
       radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 60%),
       radial-gradient(ellipse at 80% 100%, rgba(201,168,76,0.04) 0%, transparent 50%);
@@ -170,92 +171,118 @@
   }
 
   /* ============ RESULT VIEW ============ */
-  .result-view { display: none; flex-direction: column; align-items: center; gap: 32px; }
+  .result-view {
+    display: none; flex-direction: column; align-items: center;
+    gap: 28px; width: 100%;
+  }
   .result-view.active { display: flex; }
 
+  .result-hero {
+    text-align: center; padding: 16px 0 8px;
+  }
+  .result-hero-tag {
+    font-family: var(--font-display); font-size: 0.6rem;
+    letter-spacing: 0.4em; color: var(--gold); text-transform: uppercase;
+  }
   .result-header {
-    font-family: var(--font-display); font-size: 1.4rem; font-weight: 900;
-    letter-spacing: 0.1em; text-align: center;
+    font-family: var(--font-display); font-size: 1.6rem; font-weight: 900;
+    letter-spacing: 0.08em; margin-top: 6px;
   }
   .result-header span { color: var(--gold); }
+  .result-divider {
+    width: 60px; height: 1px; background: var(--gold);
+    margin: 12px auto 0; opacity: 0.5;
+  }
 
-  .result-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .result-list { width: 100%; display: flex; flex-direction: column; gap: 10px; }
 
   .result-card {
-    display: flex; align-items: center; gap: 20px;
+    display: flex; align-items: center; gap: 16px;
     background: var(--surface); border: 1px solid var(--border);
-    padding: 12px 20px; transition: all 0.3s var(--ease-out);
-    opacity: 0; transform: translateX(-30px);
-    animation: cardIn 0.5s var(--ease-out) forwards;
+    border-radius: 10px; padding: 14px 20px;
     cursor: default;
+    animation: cardIn 0.45s var(--ease-out) backwards;
   }
-  .result-card:nth-child(1) { animation-delay: 0.05s; }
-  .result-card:nth-child(2) { animation-delay: 0.1s; }
-  .result-card:nth-child(3) { animation-delay: 0.15s; }
-  .result-card:nth-child(4) { animation-delay: 0.2s; }
-  .result-card:nth-child(5) { animation-delay: 0.25s; }
-  .result-card:nth-child(6) { animation-delay: 0.3s; }
-  .result-card:nth-child(7) { animation-delay: 0.35s; }
-  .result-card:nth-child(8) { animation-delay: 0.4s; }
-  .result-card:nth-child(9) { animation-delay: 0.45s; }
-  .result-card:nth-child(10) { animation-delay: 0.5s; }
+  .result-card:nth-child(1)  { animation-delay: 0.04s; }
+  .result-card:nth-child(2)  { animation-delay: 0.08s; }
+  .result-card:nth-child(3)  { animation-delay: 0.12s; }
+  .result-card:nth-child(4)  { animation-delay: 0.16s; }
+  .result-card:nth-child(5)  { animation-delay: 0.20s; }
+  .result-card:nth-child(6)  { animation-delay: 0.24s; }
+  .result-card:nth-child(7)  { animation-delay: 0.28s; }
+  .result-card:nth-child(8)  { animation-delay: 0.32s; }
+  .result-card:nth-child(9)  { animation-delay: 0.36s; }
+  .result-card:nth-child(10) { animation-delay: 0.40s; }
   .result-card:hover {
-    border-color: var(--gold);
-    box-shadow: 0 0 24px var(--gold-glow);
+    border-color: var(--blue);
+    box-shadow: 0 0 20px var(--blue-glow);
+  }
+  .result-card.top-1 {
+    border-color: rgba(255,215,0,0.35);
+    box-shadow: 0 0 24px rgba(255,215,0,0.12);
+    background: linear-gradient(135deg, #1a1a10 0%, var(--surface) 100%);
+  }
+  .result-card.top-1:hover {
+    border-color: #ffd700;
+    box-shadow: 0 0 32px rgba(255,215,0,0.25);
+  }
+  .result-card.top-2 {
+    border-color: rgba(192,192,192,0.25);
+    box-shadow: 0 0 14px rgba(192,192,192,0.06);
   }
   .result-card.top-3 {
-    border-color: rgba(201,168,76,0.3);
-    box-shadow: 0 0 16px rgba(201,168,76,0.08);
+    border-color: rgba(205,127,50,0.2);
+    box-shadow: 0 0 10px rgba(205,127,50,0.05);
   }
-  .result-card.top-3:hover {
-    border-color: var(--gold);
-    box-shadow: 0 0 32px var(--gold-glow);
-  }
+
   @keyframes cardIn {
-    from { opacity: 0; transform: translateX(-30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   .result-rank {
-    font-family: var(--font-display); font-size: 1.6rem; font-weight: 900;
-    min-width: 48px; text-align: center;
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 900;
+    min-width: 44px; text-align: center; line-height: 1;
   }
-  .rank-1 { color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.6); font-size: 2rem; }
-  .rank-2 { color: #c0c0c0; text-shadow: 0 0 12px rgba(192,192,192,0.3); font-size: 1.7rem; }
-  .rank-3 { color: #cd7f32; text-shadow: 0 0 10px rgba(205,127,50,0.3); font-size: 1.5rem; }
-  .rank-n  { color: var(--silver); }
+  .rank-1 { color: #ffd700; text-shadow: 0 0 18px rgba(255,215,0,0.5); font-size: 1.9rem; }
+  .rank-2 { color: #c0c0c0; text-shadow: 0 0 10px rgba(192,192,192,0.25); font-size: 1.6rem; }
+  .rank-3 { color: #cd7f32; text-shadow: 0 0 8px rgba(205,127,50,0.2); font-size: 1.4rem; }
+  .rank-n  { color: var(--dim); }
 
   .result-img {
-    width: 64px; height: 64px; object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid var(--border); flex-shrink: 0;
+    width: 68px; height: 68px; object-fit: cover;
+    border-radius: 8px; flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
   }
+  .result-info { flex: 1; min-width: 0; }
   .result-name {
-    font-size: 1rem; font-weight: 600; letter-spacing: 0.03em;
+    font-size: 0.95rem; font-weight: 600; letter-spacing: 0.03em;
+  }
+  .result-rank-label {
+    font-family: var(--font-display); font-size: 0.55rem;
+    letter-spacing: 0.15em; color: var(--gold); text-transform: uppercase;
   }
 
-  /* reset button */
-  .btn-reset {
-    font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.2em;
-    padding: 12px 36px; border: 1px solid var(--border);
+  .result-actions {
+    display: flex; gap: 12px; margin-top: 4px;
+  }
+  .btn-share {
+    font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.15em;
+    padding: 8px 20px; border: 1px solid var(--border);
     background: transparent; color: var(--silver); cursor: pointer;
     transition: all 0.3s var(--ease-out); text-transform: uppercase;
-    position: relative; overflow: hidden;
   }
-  .btn-reset::before {
-    content: ''; position: absolute; inset: 0;
-    background: var(--blue); opacity: 0; transition: opacity 0.3s;
-    z-index: -1;
+  .btn-share:hover {
+    border-color: var(--gold); color: var(--gold);
+    box-shadow: 0 0 16px var(--gold-glow);
   }
-  .btn-reset:hover {
-    border-color: var(--blue); color: #fff;
-    box-shadow: 0 0 24px var(--blue-glow);
-  }
-  .btn-reset:hover::before { opacity: 0.08; }
+
+  .selection-view.hidden { display: none; }
 
   /* ============ RESPONSIVE ============ */
   @media (max-width: 640px) {
     .app { padding: 12px; max-width: 100%; }
+    body { padding: 16px 0; }
     .album-stage { width: 220px; height: 220px; }
     .header-title { font-size: 1.1rem; }
     .header-tag { font-size: 0.6rem; }
@@ -272,20 +299,32 @@
     .rank-1 { font-size: 1.4rem; }
     .rank-2 { font-size: 1.2rem; }
     .rank-3 { font-size: 1.1rem; }
-    .result-img { width: 44px; height: 44px; border-radius: 6px; }
+    .result-img { width: 48px; height: 48px; border-radius: 6px; }
     .result-name { font-size: 0.8rem; }
-    .result-header { font-size: 1.1rem; }
+    .result-header { font-size: 1.2rem; }
+    .result-divider { margin: 8px auto 0; }
+    .btn-share { font-size: 0.6rem; padding: 6px 16px; }
     .selection-view { gap: 20px; }
     .progress-wrap { max-width: 100%; }
+    .result-hero { padding: 8px 0 4px; }
+    .result-hero-tag { font-size: 0.5rem; }
+    .result-view { gap: 20px; }
+    .result-actions { margin-top: 0; }
   }
 
   @media (max-width: 380px) {
+    body { padding: 8px 0; }
     .album-stage { width: 180px; height: 180px; }
     .rank-grid { gap: 6px; }
     .rank-btn { font-size: 0.7rem; border-radius: 5px; }
-  }
-
-  .selection-view.hidden { display: none; }
+    .result-img { width: 40px; height: 40px; border-radius: 5px; }
+    .result-card { padding: 8px 10px; gap: 8px; }
+    .result-rank { font-size: 1rem; min-width: 28px; }
+    .rank-1 { font-size: 1.2rem; }
+    .rank-2 { font-size: 1.1rem; }
+    .result-name { font-size: 0.7rem; }
+    .result-header { font-size: 1rem; }
+   }
 </style>
 </head>
 <body>
@@ -318,9 +357,15 @@
 
   <!-- ======== RESULT VIEW ======== -->
   <div class="result-view" id="resultView">
-    <h2 class="result-header">你的<span>TOP TEN</span></h2>
+    <div class="result-hero">
+      <div class="result-hero-tag">Your Selection</div>
+      <h2 class="result-header">TOP <span>TEN</span></h2>
+      <div class="result-divider"></div>
+    </div>
     <div class="result-list" id="resultList"></div>
-    <button class="btn-reset" id="btnReset">重新选择</button>
+    <div class="result-actions">
+      <button class="btn-share" id="btnReset">重新选择</button>
+    </div>
   </div>
 </div>
 
@@ -492,6 +537,9 @@
   }
 
   function showResults() {
+    switching = false;
+    preloadImg.src = '';
+
     selectionView.style.display = 'none';
     selectionView.classList.add('hidden');
     resultView.classList.add('active');
@@ -501,7 +549,9 @@
       var album = rankings[r];
       var card = document.createElement('div');
       card.className = 'result-card';
-      if (r <= 3) card.classList.add('top-3');
+      if (r === 1) card.classList.add('top-1');
+      if (r === 2) card.classList.add('top-2');
+      if (r === 3) card.classList.add('top-3');
 
       var rankClass = 'rank-n';
       if (r === 1) rankClass = 'rank-1';
@@ -511,9 +561,15 @@
       card.innerHTML =
         '<div class="result-rank ' + rankClass + '">' + r + '</div>' +
         '<img class="result-img" src="' + album.file + '" alt="">' +
-        '<div class="result-name">' + album.name + '</div>';
+        '<div class="result-info">' +
+          '<div class="result-name">' + album.name + '</div>' +
+          '<div class="result-rank-label">No. ' + r + '</div>' +
+        '</div>';
       resultList.appendChild(card);
     }
+
+    // Scroll to top of results
+    resultView.scrollIntoView({ behavior: 'smooth' });
   }
 
   btnReset.addEventListener('click', initGame);
